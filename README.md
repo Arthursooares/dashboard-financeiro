@@ -1,21 +1,84 @@
-# Dashboard Financeiro (Backend)
+# Dashboard Financeiro
 
-API de gestão financeira pessoal com Node.js + TypeScript + Express e Supabase (PostgreSQL).
-O objetivo é registrar transações (income/expense), normalizar dados (currency, exchange_rate, amount_brl) e servir endpoints analíticos para um dashboard.
+Projeto de um ecossistema de gestão financeira pessoal.
 
-## Stack
-- Node.js + TypeScript
+O sistema registra transações financeiras, armazena os dados em um banco PostgreSQL (Supabase) e exibe um dashboard com análise financeira.
+
+## Tecnologias
+
+Backend
+- Node.js
 - Express
-- Supabase (PostgreSQL via PostgREST)
+- TypeScript
+- Supabase (PostgreSQL)
+
+Frontend
+- React
+- Vite
 - Axios
 
-## Requisitos
-- Node 18+ (recomendado)
-- Projeto no Supabase com tabela `transactions`
+## Funcionalidades atuais
 
-## Setup
+- Registro de transações financeiras
+- Seed de dados para simulação
+- Listagem de transações
+- Resumo financeiro mensal
+- Integração completa frontend ↔ backend
 
-### 1) Instalar dependências
-```bash
+## Estrutura do projeto
+
+
+dashboard-financeiro
+│
+├── server
+│ ├── index.ts
+│ ├── scripts
+│ │ └── seed.ts
+│ └── package.json
+│
+├── client
+│ ├── src
+│ │ ├── api
+│ │ ├── App.tsx
+│ │ └── main.tsx
+│ └── package.json
+│
+└── README.md
+
+
+## Como rodar o projeto
+
+### Backend
+
+
 cd server
 npm install
+npm run dev
+
+
+Servidor roda em:
+
+
+http://localhost:3001
+
+
+### Frontend
+
+
+cd client
+npm install
+npm run dev
+
+
+Frontend roda em:
+
+
+http://localhost:5173
+
+
+## Próximos passos
+
+- Dashboard visual com gráficos
+- Gastos por categoria
+- Histórico financeiro mensal
+- Cadastro de transações pelo frontend
