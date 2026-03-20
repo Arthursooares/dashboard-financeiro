@@ -4,6 +4,7 @@ import SummaryCards from "./components/SummaryCards";
 import CategoryChart from "./components/CategoryChart";
 import TransactionsTable from "./components/TransactionsTable";
 import TransactionForm from "./components/TransactionForm";
+import EvolutionChart from "./components/EvolutionChart";
 
 type Transaction = {
   id: string;
@@ -38,16 +39,20 @@ function App() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [categoryData, setCategoryData] = useState<CategoryItem[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
+  const [evolutionData, setEvolutionData] = useState<any[]>([]);
+
   async function loadDashboardData(month = selectedMonth) {
-    const [transactionsRes, summaryRes, categoryRes] = await Promise.all([
+    const [transactionsRes, summaryRes, categoryRes, evolutionRes] = await Promise.all([
       api.get("/transactions", { params: { month } }),
       api.get("/summary/month", { params: { month } }),
       api.get("/summary/by-category", { params: { month } }),
+      api.get("/summary/evolution"),
     ]);
 
     setTransactions(transactionsRes.data);
     setSummary(summaryRes.data);
     setCategoryData(categoryRes.data.result);
+    setEvolutionData(evolutionRes.data);
   }
 
   useEffect(() => {
@@ -73,6 +78,8 @@ function App() {
         />
       </div>
       <TransactionForm onTransactionCreated={loadDashboardData} />
+      
+      {evolutionData.length > 0 && <EvolutionChart data={evolutionData} />}
 
       {summary && <SummaryCards summary={summary} />}
 

@@ -12,7 +12,6 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Preferir IPv4 ajuda em redes problemáticas
 dns.setDefaultResultOrder?.("ipv4first");
 
 // ---------- ENV ----------
@@ -30,25 +29,30 @@ const DNS_SERVERS = (process.env.DNS_SERVERS || "1.1.1.1,1.0.0.1,8.8.8.8,8.8.4.4
   .map((s) => s.trim())
   .filter(Boolean);
 
-// TLS seguro (NÃO desligar SSL)
 const agent = new https.Agent({ rejectUnauthorized: true });
 
 // ---------- helpers ----------
 function cleanUndefined(obj: Record<string, unknown>): Record<string, unknown> {
   const cleaned: Record<string, unknown> = {};
+
   for (const key in obj) {
-    const v = obj[key];
-    if (v !== undefined && v !== "undefined") cleaned[key] = v;
+    const value = obj[key];
+    if (value !== undefined && value !== "undefined") {
+      cleaned[key] = value;
+    }
   }
+
   return cleaned;
 }
 
 function toNumber(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
+
   if (typeof v === "string") {
     const n = Number(v);
     return Number.isFinite(n) ? n : null;
   }
+
   return null;
 }
 
@@ -62,9 +66,14 @@ function monthRange(yyyyMm: string) {
   const [yStr, mStr] = yyyyMm.split("-");
   const y = Number(yStr);
   const m = Number(mStr);
+
   const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0));
   const end = new Date(Date.UTC(y, m, 1, 0, 0, 0));
-  return { start: start.toISOString(), end: end.toISOString() };
+
+  return {
+    startDate: start.toISOString().slice(0, 10),
+    endDate: end.toISOString().slice(0, 10),
+  };
 }
 
 async function axiosWithDnsFallback<T = any>(config: AxiosRequestConfig): Promise<T> {
@@ -75,26 +84,37 @@ async function axiosWithDnsFallback<T = any>(config: AxiosRequestConfig): Promis
       timeout: 15000,
       validateStatus: () => true,
     });
+
     return res as any;
   } catch (err: any) {
     const msg = String(err?.message || "");
-    const isDns = msg.includes("ENOTFOUND") || msg.includes("EAI_AGAIN") || msg.includes("getaddrinfo");
+    const isDns =
+      msg.includes("ENOTFOUND") ||
+      msg.includes("EAI_AGAIN") ||
+      msg.includes("getaddrinfo");
+
     if (!DNS_FALLBACK || !isDns) throw err;
 
     dns.setServers(DNS_SERVERS);
+
     const res2 = await axios({
       ...config,
       httpsAgent: agent,
       timeout: 15000,
       validateStatus: () => true,
     });
+
     return res2 as any;
   }
 }
 
-// Wrapper para chamar PostgREST do Supabase
-async function supabaseRequest(method: "get" | "post" | "patch" | "delete", path: string, data?: any) {
+async function supabaseRequest(
+  method: "get" | "post" | "patch" | "delete",
+  path: string,
+  data?: any
+) {
   const url = `${SUPABASE_URL}${path}`;
+
   const response: any = await axiosWithDnsFallback({
     method,
     url,
@@ -106,12 +126,15 @@ async function supabaseRequest(method: "get" | "post" | "patch" | "delete", path
       Prefer: "return=representation",
     },
   });
+
   return response;
 }
 
 // ---------- routes ----------
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/health", (_req, res) => {
+  return res.json({ ok: true });
+});
 
 // POST /transactions
 app.post("/transactions", async (req, res) => {
@@ -120,13 +143,24 @@ app.post("/transactions", async (req, res) => {
 
   try {
     const rawBody: Record<string, unknown> =
-      req.body && typeof req.body === "object" ? (req.body as Record<string, unknown>) : {};
+      req.body && typeof req.body === "object"
+        ? (req.body as Record<string, unknown>)
+        : {};
 
     const body = cleanUndefined(rawBody);
 
+    if (!body["date"]) {
+      body["date"] = new Date().toISOString().split("T")[0];
+    }
+
     const currency =
-      typeof body["currency"] === "string" && body["currency"] ? (body["currency"] as string) : "BRL";
-    if (!body["currency"]) body["currency"] = currency;
+      typeof body["currency"] === "string" && body["currency"]
+        ? (body["currency"] as string)
+        : "BRL";
+
+    if (!body["currency"]) {
+      body["currency"] = currency;
+    }
 
     const amount = toNumber(body["amount"]);
     const amountBrl = toNumber(body["amount_brl"]);
@@ -136,7 +170,8 @@ app.post("/transactions", async (req, res) => {
         body["amount_brl"] = amount;
       } else {
         return res.status(400).json({
-          error: "Para currency diferente de BRL, envie amount_brl (ou implemente exchange_rate).",
+          error:
+            "Para currency diferente de BRL, envie amount_brl (ou implemente exchange_rate).",
         });
       }
     }
@@ -144,6 +179,7 @@ app.post("/transactions", async (req, res) => {
     console.log("📦 BODY FINAL:", body);
 
     const sb = await supabaseRequest("post", "/rest/v1/transactions", body);
+
     if (sb.status >= 200 && sb.status < 300) {
       console.log("✅ DADO SALVO NO SUPABASE");
       return res.status(201).json(sb.data?.[0] ?? sb.data);
@@ -169,14 +205,15 @@ app.get("/transactions", async (req, res) => {
     let url = `${SUPABASE_URL}/rest/v1/transactions?select=*`;
 
     if (month) {
-      const { start, end } = monthRange(month);
-      url += `&created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}`;
+      const { startDate, endDate } = monthRange(month);
+      url += `&date=gte.${encodeURIComponent(startDate)}&date=lt.${encodeURIComponent(endDate)}`;
     }
+
     if (type) {
       url += `&type=eq.${encodeURIComponent(type)}`;
     }
 
-    url += `&order=created_at.desc&limit=${encodeURIComponent(String(limit))}&offset=${encodeURIComponent(
+    url += `&order=date.desc&limit=${encodeURIComponent(String(limit))}&offset=${encodeURIComponent(
       String(offset)
     )}`;
 
@@ -189,7 +226,10 @@ app.get("/transactions", async (req, res) => {
       },
     });
 
-    if (sb.status >= 200 && sb.status < 300) return res.json(sb.data);
+    if (sb.status >= 200 && sb.status < 300) {
+      return res.json(sb.data);
+    }
+
     return res.status(sb.status).json({ error: sb.data });
   } catch (err: any) {
     const msg = err?.response?.data || err?.message || "Erro desconhecido";
@@ -201,12 +241,15 @@ app.get("/transactions", async (req, res) => {
 app.get("/summary/month", async (req, res) => {
   try {
     const month =
-      typeof req.query.month === "string" && req.query.month ? req.query.month : yyyyMmFromDate(new Date());
-    const { start, end } = monthRange(month);
+      typeof req.query.month === "string" && req.query.month
+        ? req.query.month
+        : yyyyMmFromDate(new Date());
+
+    const { startDate, endDate } = monthRange(month);
 
     const url =
       `${SUPABASE_URL}/rest/v1/transactions?select=amount_brl,type` +
-      `&created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}`;
+      `&date=gte.${encodeURIComponent(startDate)}&date=lt.${encodeURIComponent(endDate)}`;
 
     const sb: any = await axiosWithDnsFallback({
       method: "get",
@@ -217,18 +260,29 @@ app.get("/summary/month", async (req, res) => {
       },
     });
 
-    if (!(sb.status >= 200 && sb.status < 300)) return res.status(sb.status).json({ error: sb.data });
+    if (!(sb.status >= 200 && sb.status < 300)) {
+      return res.status(sb.status).json({ error: sb.data });
+    }
 
     let income = 0;
     let expenses = 0;
 
     for (const row of sb.data as Array<any>) {
-      const v = toNumber(row.amount_brl) ?? 0;
-      if (row.type === "income") income += v;
-      else if (row.type === "expense") expenses += v;
+      const value = toNumber(row.amount_brl) ?? 0;
+
+      if (row.type === "income") {
+        income += value;
+      } else if (row.type === "expense") {
+        expenses += value;
+      }
     }
 
-    return res.json({ month, income, expenses, balance: income - expenses });
+    return res.json({
+      month,
+      income,
+      expenses,
+      balance: income - expenses,
+    });
   } catch (err: any) {
     const msg = err?.response?.data || err?.message || "Erro desconhecido";
     return res.status(500).json({ error: msg });
@@ -236,16 +290,18 @@ app.get("/summary/month", async (req, res) => {
 });
 
 // GET /summary/by-category?month=2026-03
-// Agora usando "category" (porque sua tabela NÃO tem category_id)
 app.get("/summary/by-category", async (req, res) => {
   try {
     const month =
-      typeof req.query.month === "string" && req.query.month ? req.query.month : yyyyMmFromDate(new Date());
-    const { start, end } = monthRange(month);
+      typeof req.query.month === "string" && req.query.month
+        ? req.query.month
+        : yyyyMmFromDate(new Date());
+
+    const { startDate, endDate } = monthRange(month);
 
     const url =
       `${SUPABASE_URL}/rest/v1/transactions?select=amount_brl,category,type` +
-      `&created_at=gte.${encodeURIComponent(start)}&created_at=lt.${encodeURIComponent(end)}` +
+      `&date=gte.${encodeURIComponent(startDate)}&date=lt.${encodeURIComponent(endDate)}` +
       `&type=eq.expense`;
 
     const sb: any = await axiosWithDnsFallback({
@@ -257,14 +313,17 @@ app.get("/summary/by-category", async (req, res) => {
       },
     });
 
-    if (!(sb.status >= 200 && sb.status < 300)) return res.status(sb.status).json({ error: sb.data });
+    if (!(sb.status >= 200 && sb.status < 300)) {
+      return res.status(sb.status).json({ error: sb.data });
+    }
 
     const byCategory: Record<string, number> = {};
 
     for (const row of sb.data as Array<any>) {
-      const cat = row.category ?? "uncategorized";
-      const v = toNumber(row.amount_brl) ?? 0;
-      byCategory[String(cat)] = (byCategory[String(cat)] || 0) + v;
+      const category = row.category ?? "uncategorized";
+      const value = toNumber(row.amount_brl) ?? 0;
+
+      byCategory[String(category)] = (byCategory[String(category)] || 0) + value;
     }
 
     const result = Object.entries(byCategory)
@@ -278,4 +337,62 @@ app.get("/summary/by-category", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`🚀 Servidor rodando na porta ${PORT}`));
+// GET /summary/evolution
+app.get("/summary/evolution", async (_req, res) => {
+  try {
+    const url =
+      `${SUPABASE_URL}/rest/v1/transactions?select=amount_brl,type,date&order=date.asc`;
+
+    const sb: any = await axiosWithDnsFallback({
+      method: "get",
+      url,
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+      },
+    });
+
+    if (!(sb.status >= 200 && sb.status < 300)) {
+      return res.status(sb.status).json({ error: sb.data });
+    }
+
+    const monthly: Record<string, { income: number; expenses: number }> = {};
+
+    for (const row of sb.data as Array<any>) {
+      if (!row.date) continue;
+
+      const txDate = new Date(`${row.date}T00:00:00`);
+      const month = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}`;
+
+      if (!monthly[month]) {
+        monthly[month] = { income: 0, expenses: 0 };
+      }
+
+      const value = toNumber(row.amount_brl) ?? 0;
+
+      if (row.type === "income") {
+        monthly[month].income += value;
+      } else if (row.type === "expense") {
+        monthly[month].expenses += value;
+      }
+    }
+
+    const result = Object.entries(monthly)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, values]) => ({
+        month,
+        income: values.income,
+        expenses: values.expenses,
+        balance: values.income - values.expenses,
+      }));
+
+    return res.json(result);
+  } catch (err: any) {
+    const msg = err?.response?.data || err?.message || "Erro desconhecido";
+    return res.status(500).json({ error: msg });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando na porta ${PORT}`);
+});
