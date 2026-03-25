@@ -249,7 +249,8 @@ app.get("/summary/month", async (req, res) => {
 
     const url =
       `${SUPABASE_URL}/rest/v1/transactions?select=amount_brl,type` +
-      `&date=gte.${encodeURIComponent(startDate)}&date=lt.${encodeURIComponent(endDate)}`;
+      `&date=gte.${encodeURIComponent(startDate)}` +
+      `&date=lt.${encodeURIComponent(endDate)}`;
 
     const sb: any = await axiosWithDnsFallback({
       method: "get",
@@ -301,7 +302,8 @@ app.get("/summary/by-category", async (req, res) => {
 
     const url =
       `${SUPABASE_URL}/rest/v1/transactions?select=amount_brl,category,type` +
-      `&date=gte.${encodeURIComponent(startDate)}&date=lt.${encodeURIComponent(endDate)}` +
+      `&date=gte.${encodeURIComponent(startDate)}` +
+      `&date=lt.${encodeURIComponent(endDate)}` +
       `&type=eq.expense`;
 
     const sb: any = await axiosWithDnsFallback({
@@ -337,11 +339,33 @@ app.get("/summary/by-category", async (req, res) => {
   }
 });
 
-// GET /summary/evolution
-app.get("/summary/evolution", async (_req, res) => {
+// GET /summary/evolution?month=2026-03
+app.get("/summary/evolution", async (req, res) => {
   try {
+    const selectedMonth =
+      typeof req.query.month === "string" && req.query.month
+        ? req.query.month
+        : yyyyMmFromDate(new Date());
+
+    const [yearStr, monthStr] = selectedMonth.split("-");
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+
+    if (!year || !month || month < 1 || month > 12) {
+      return res.status(400).json({ error: "Parâmetro month inválido. Use YYYY-MM." });
+    }
+
+    const endDateObj = new Date(Date.UTC(year, month, 1));
+    const startDateObj = new Date(Date.UTC(year, month - 6, 1));
+
+    const startDate = startDateObj.toISOString().slice(0, 10);
+    const endDate = endDateObj.toISOString().slice(0, 10);
+
     const url =
-      `${SUPABASE_URL}/rest/v1/transactions?select=amount_brl,type,date&order=date.asc`;
+      `${SUPABASE_URL}/rest/v1/transactions?select=amount_brl,type,date` +
+      `&date=gte.${encodeURIComponent(startDate)}` +
+      `&date=lt.${encodeURIComponent(endDate)}` +
+      `&order=date.asc`;
 
     const sb: any = await axiosWithDnsFallback({
       method: "get",
@@ -358,22 +382,26 @@ app.get("/summary/evolution", async (_req, res) => {
 
     const monthly: Record<string, { income: number; expenses: number }> = {};
 
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(Date.UTC(year, month - 6 + i, 1));
+      const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+      monthly[key] = { income: 0, expenses: 0 };
+    }
+
     for (const row of sb.data as Array<any>) {
       if (!row.date) continue;
 
       const txDate = new Date(`${row.date}T00:00:00`);
-      const month = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}`;
+      const key = `${txDate.getFullYear()}-${String(txDate.getMonth() + 1).padStart(2, "0")}`;
 
-      if (!monthly[month]) {
-        monthly[month] = { income: 0, expenses: 0 };
-      }
+      if (!monthly[key]) continue;
 
       const value = toNumber(row.amount_brl) ?? 0;
 
       if (row.type === "income") {
-        monthly[month].income += value;
+        monthly[key].income += value;
       } else if (row.type === "expense") {
-        monthly[month].expenses += value;
+        monthly[key].expenses += value;
       }
     }
 

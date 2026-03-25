@@ -1,3 +1,7 @@
+import type {
+    NameType,
+    ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 import {
     LineChart,
     Line,
@@ -6,6 +10,7 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
+    Legend,
 } from "recharts";
 
 type EvolutionItem = {
@@ -34,19 +39,39 @@ function formatMonth(value: string) {
 
 function EvolutionChart({ data }: EvolutionChartProps) {
     const hasData = data.length > 0;
-    const hasMultiplePoints = data.length > 1;
 
     return (
         <div
             style={{
-                backgroundColor: "#f5f5f5",
-                padding: 20,
-                borderRadius: 12,
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-                marginBottom: 30,
+                background: "#ffffff",
+                padding: 24,
+                borderRadius: 20,
+                boxShadow: "0 8px 24px rgba(15, 23, 42, 0.06)",
+                marginBottom: 28,
+                border: "1px solid #e5e7eb",
             }}
         >
-            <h2 style={{ marginTop: 0, marginBottom: 8 }}>Evolução financeira</h2>
+            <div style={{ marginBottom: 18 }}>
+                <h2
+                    style={{
+                        margin: 0,
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: "#0f172a",
+                    }}
+                >
+                    Evolução financeira
+                </h2>
+                <p
+                    style={{
+                        margin: "6px 0 0 0",
+                        fontSize: 14,
+                        color: "#64748b",
+                    }}
+                >
+                    Visão dos últimos 6 meses com base no mês selecionado.
+                </p>
+            </div>
 
             {!hasData ? (
                 <div
@@ -55,93 +80,100 @@ function EvolutionChart({ data }: EvolutionChartProps) {
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        color: "#666",
+                        color: "#64748b",
                         fontSize: 14,
+                        borderRadius: 16,
+                        background: "#f8fafc",
                     }}
                 >
                     Nenhum dado disponível para exibir a evolução.
                 </div>
             ) : (
-                <>
-                    {!hasMultiplePoints && (
-                        <p
-                            style={{
-                                marginTop: 0,
-                                marginBottom: 12,
-                                fontSize: 13,
-                                color: "#666",
-                            }}
+                <div style={{ width: "100%", height: 360 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                        <LineChart
+                            data={data}
+                            margin={{ top: 10, right: 16, left: 8, bottom: 8 }}
                         >
-                            Há apenas 1 mês disponível. Adicione mais meses para visualizar a evolução como linha contínua.
-                        </p>
-                    )}
-                    {hasMultiplePoints ? (
-                        <Line
-                            type="monotone"
-                            dataKey="balance"
-                            name="Saldo"
-                            stroke="#111"
-                            strokeWidth={3}
-                            dot={{ r: 4 }}
-                            activeDot={{ r: 6 }}
-                        />
-                    ) : (
-                        <Line
-                            type="linear"
-                            dataKey="balance"
-                            name="Saldo"
-                            stroke="#111"
-                            strokeWidth={0}
-                            dot={{ r: 6 }}
-                            activeDot={{ r: 8 }}
-                        />
-                    )}
+                            <CartesianGrid
+                                strokeDasharray="3 3"
+                                vertical={false}
+                                stroke="#e5e7eb"
+                            />
 
-                    <div style={{ width: "100%", height: 320 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart
-                                data={data}
-                                margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                <XAxis
-                                    dataKey="month"
-                                    tickFormatter={formatMonth}
-                                    tickLine={false}
-                                    axisLine={false}
-                                />
-                                <YAxis
-                                    tickFormatter={(value) => formatBRL(Number(value))}
-                                    tickLine={false}
-                                    axisLine={false}
-                                    width={90}
-                                    domain={([dataMin, dataMax]) => {
-                                        if (dataMin === dataMax) {
-                                            const padding = Math.max(dataMin * 0.1, 1000);
-                                            return [dataMin - padding, dataMax + padding];
-                                        }
+                            <XAxis
+                                dataKey="month"
+                                tickFormatter={formatMonth}
+                                tickLine={false}
+                                axisLine={false}
+                                tick={{ fill: "#64748b", fontSize: 12 }}
+                            />
 
-                                        const padding = (dataMax - dataMin) * 0.15;
-                                        return [dataMin - padding, dataMax + padding];
-                                    }}
-                                />
-                                <Tooltip
-                                    formatter={(value) => formatBRL(Number(value))}
-                                    labelFormatter={(label) => `Mês: ${formatMonth(String(label))}`}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="balance"
-                                    name="Saldo"
-                                    stroke="#111"
-                                    strokeWidth={3}
-                                    dot={{ r: 4 }}
-                                    activeDot={{ r: 6 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </>
+                            <YAxis
+                                tickFormatter={(value) => formatBRL(Number(value))}
+                                tickLine={false}
+                                axisLine={false}
+                                width={100}
+                                tick={{ fill: "#64748b", fontSize: 12 }}
+                                domain={["auto", "auto"]}
+                            />
+                            <Tooltip
+                                contentStyle={{
+                                    borderRadius: 14,
+                                    border: "1px solid #e5e7eb",
+                                    boxShadow: "0 10px 30px rgba(15, 23, 42, 0.10)",
+                                    backgroundColor: "#ffffff",
+                                }}
+                                formatter={(value, name) => {
+                                    return [formatBRL(Number(value)), name];
+                                }}
+                                labelFormatter={(label) => {
+                                    return `Mês: ${formatMonth(String(label))}`;
+                                }}
+                            />
+
+                            <Legend
+                                verticalAlign="top"
+                                align="right"
+                                iconType="circle"
+                                wrapperStyle={{
+                                    paddingBottom: 12,
+                                    fontSize: 13,
+                                }}
+                            />
+
+                            <Line
+                                type="linear"
+                                dataKey="income"
+                                name="Receitas"
+                                stroke="#16a34a"
+                                strokeWidth={2}
+                                dot={{ r: 3 }}
+                                activeDot={{ r: 5 }}
+                            />
+
+                            <Line
+                                type="linear"
+                                dataKey="expenses"
+                                name="Despesas"
+                                stroke="#dc2626"
+                                strokeWidth={2}
+                                dot={{ r: 3 }}
+                                activeDot={{ r: 5 }}
+                            />
+
+                            <Line
+                                type="linear"
+                                dataKey="balance"
+                                name="Saldo"
+                                stroke="#0f172a"
+                                strokeWidth={3}
+                                dot={{ r: 4 }}
+                                activeDot={{ r: 6 }}
+                            />
+                        </LineChart>
+                    </ResponsiveContainer>
+                </div>
             )}
         </div>
     );

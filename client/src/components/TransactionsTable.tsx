@@ -1,6 +1,6 @@
 type Transaction = {
   id: string;
-  created_at: string;
+  date: string;
   description: string;
   amount_brl: number;
   category: string | null;
@@ -56,7 +56,7 @@ function TransactionsTable({ transactions }: TransactionsTableProps) {
         <tbody>
           {transactions.map((transaction) => (
             <tr key={transaction.id} style={{ borderBottom: "1px solid #ddd" }}>
-              <td style={{ padding: 12 }}>{formatDate(transaction.created_at)}</td>
+              <td style={{ padding: 12 }}>{formatDate(transaction.date)}</td>
               <td style={{ padding: 12 }}>{transaction.description}</td>
               <td style={{ padding: 12 }}>{transaction.category ?? "Sem categoria"}</td>
               <td style={{ padding: 12 }}>{transaction.type}</td>
