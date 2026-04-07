@@ -1,84 +1,75 @@
-# Dashboard Financeiro
+-# 💰 Dashboard Financeiro
 
-Projeto de um ecossistema de gestão financeira pessoal.
+Aplicação fullstack para controle financeiro pessoal, com visual moderno, gráficos interativos e análise mensal de receitas e despesas.
 
-O sistema registra transações financeiras, armazena os dados em um banco PostgreSQL (Supabase) e exibe um dashboard com análise financeira.
+🔗 **Acesse online:**  
+https://dashboard-financeiro-web.vercel.app
 
-## Tecnologias
+---
 
-Backend
-- Node.js
-- Express
-- TypeScript
-- Supabase (PostgreSQL)
+## 📸 Preview
 
-Frontend
-- React
-- Vite
-- Axios
+> Dashboard com visão mensal, gráficos de evolução financeira, distribuição por categoria e histórico de transações.
 
-## Funcionalidades atuais
+---
 
-- Registro de transações financeiras
-- Seed de dados para simulação
-- Listagem de transações
-- Resumo financeiro mensal
-- Integração completa frontend ↔ backend
+## 🚀 Funcionalidades
 
-## Estrutura do projeto
+- 📊 **Resumo financeiro mensal**
+  - Total de receitas
+  - Total de despesas
+  - Saldo do período
 
+- 📈 **Evolução financeira**
+  - Visualização dos últimos meses
+  - Comparação entre receitas, despesas e saldo
 
-dashboard-financeiro
-│
-├── server
-│ ├── index.ts
-│ ├── scripts
-│ │ └── seed.ts
-│ └── package.json
-│
-├── client
-│ ├── src
-│ │ ├── api
-│ │ ├── App.tsx
-│ │ └── main.tsx
-│ └── package.json
-│
-└── README.md
+- 🧾 **Histórico de transações**
+  - Listagem completa por mês
+  - Datas, categorias e valores formatados
 
+- 🏷️ **Gastos por categoria**
+  - Gráfico de distribuição
+  - Identificação de padrões de consumo
 
-## Como rodar o projeto
+- ➕ **Cadastro de transações**
+  - Receita ou despesa
+  - Categorias dinâmicas
+  - Atualização automática do dashboard
 
-### Backend
+- 📅 **Filtro por mês**
+  - Navegação entre períodos
+  - Atualização em tempo real dos dados
 
+---
 
-cd server
-npm install
-npm run dev
-
-
-Servidor roda em:
-
-
-http://localhost:3001
-
+## 🛠️ Tecnologias utilizadas
 
 ### Frontend
+- React + Vite
+- TypeScript
+- Recharts (gráficos)
+- Axios
+- CSS (estilização customizada)
 
+### Backend
+- Node.js + Express
+- TypeScript
+- Axios (integração)
+- Supabase (PostgreSQL)
 
-cd client
-npm install
-npm run dev
+### Infraestrutura
+- **Frontend:** Vercel
+- **Backend:** Render
+- **Banco de dados:** Supabase
 
+---
 
-Frontend roda em:
+## 🧠 Arquitetura
 
-
-http://localhost:5173
-
-
-## Próximos passos
-
-- Dashboard visual com gráficos
-- Gastos por categoria
-- Histórico financeiro mensal
-- Cadastro de transações pelo frontend
+```txt
+Frontend (Vercel)
+      ↓
+API (Render - Express)
+      ↓
+Banco de dados (Supabase)
