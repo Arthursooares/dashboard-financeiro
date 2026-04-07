@@ -37,9 +37,33 @@ const incomeDescriptions = [
   "Venda",
   "Rendimento",
 ];
+
 type TransactionFormProps = {
   onTransactionCreated: () => void;
 };
+
+function fieldStyle(): React.CSSProperties {
+  return {
+    width: "100%",
+    padding: "13px 14px",
+    borderRadius: 12,
+    border: "1px solid #cbd5e1",
+    background: "#ffffff",
+    fontSize: 14,
+    color: "#0f172a",
+    outline: "none",
+  };
+}
+
+function labelStyle(): React.CSSProperties {
+  return {
+    display: "block",
+    marginBottom: 8,
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#334155",
+  };
+}
 
 function TransactionForm({ onTransactionCreated }: TransactionFormProps) {
   const [description, setDescription] = useState("");
@@ -47,11 +71,12 @@ function TransactionForm({ onTransactionCreated }: TransactionFormProps) {
   const [type, setType] = useState<"income" | "expense">("expense");
   const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(false);
-  const categorySuggestions =
-  type === "expense" ? expenseCategories : incomeCategories;
 
-const descriptionSuggestions =
-  type === "expense" ? expenseDescriptions : incomeDescriptions;
+  const categorySuggestions =
+    type === "expense" ? expenseCategories : incomeCategories;
+
+  const descriptionSuggestions =
+    type === "expense" ? expenseDescriptions : incomeDescriptions;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,86 +113,127 @@ const descriptionSuggestions =
   return (
     <div
       style={{
-        backgroundColor: "#f5f5f5",
-        padding: 20,
-        borderRadius: 12,
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+        background: "#ffffff",
+        padding: 24,
+        borderRadius: 20,
+        border: "1px solid #e2e8f0",
+        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
         marginBottom: 30,
       }}
     >
-      <h2 style={{ marginTop: 0 }}>Adicionar transação</h2>
+      <div style={{ marginBottom: 20 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 24,
+            fontWeight: 700,
+            color: "#0f172a",
+          }}
+        >
+          Adicionar transação
+        </h2>
+        <p
+          style={{
+            margin: "6px 0 0",
+            fontSize: 14,
+            color: "#64748b",
+            lineHeight: 1.5,
+          }}
+        >
+          Registre novas receitas e despesas para manter o dashboard atualizado.
+        </p>
+      </div>
 
       <form
         onSubmit={handleSubmit}
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
-          gap: 12,
+          gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+          gap: 16,
+          alignItems: "end",
         }}
       >
-        <input
-          type="text"
-          list="description-suggestions"
-          placeholder="Descrição"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-        />
+        <div>
+          <label style={labelStyle()}>Descrição</label>
+          <input
+            type="text"
+            list="description-suggestions"
+            placeholder="Ex: Mercado, Salário, Uber..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            style={fieldStyle()}
+          />
+          <datalist id="description-suggestions">
+            {descriptionSuggestions.map((item) => (
+              <option key={item} value={item} />
+            ))}
+          </datalist>
+        </div>
 
-        <datalist id="description-suggestions">
-          {descriptionSuggestions.map((item) => (
-            <option key={item} value={item} />
-          ))}
-        </datalist>
+        <div>
+          <label style={labelStyle()}>Valor</label>
+          <input
+            type="number"
+            placeholder="Ex: 120.50"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={fieldStyle()}
+          />
+        </div>
 
-        <input
-          type="number"
-          placeholder="Valor"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-        />
+        <div>
+          <label style={labelStyle()}>Tipo</label>
+          <select
+            value={type}
+            onChange={(e) => setType(e.target.value as "income" | "expense")}
+            style={fieldStyle()}
+          >
+            <option value="expense">Despesa</option>
+            <option value="income">Receita</option>
+          </select>
+        </div>
 
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as "income" | "expense")}
-          style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-        >
-          <option value="expense">Despesa</option>
-          <option value="income">Receita</option>
-        </select>
+        <div>
+          <label style={labelStyle()}>Categoria</label>
+          <input
+            type="text"
+            list="category-suggestions"
+            placeholder="Ex: alimentacao, renda..."
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            style={fieldStyle()}
+          />
+          <datalist id="category-suggestions">
+            {categorySuggestions.map((item) => (
+              <option key={item} value={item} />
+            ))}
+          </datalist>
+        </div>
 
-        <input
-          type="text"
-          list="category-suggestions"
-          placeholder="Categoria"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc" }}
-        />
-
-        <datalist id="category-suggestions">
-          {categorySuggestions.map((item) => (
-            <option key={item} value={item} />
-          ))}
-        </datalist>
-
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            gridColumn: "span 4",
-            padding: 12,
-            borderRadius: 8,
-            border: "none",
-            backgroundColor: "#111",
-            color: "white",
-            fontWeight: "bold",
-            cursor: "pointer",
-          }}
-        >
-          {loading ? "Salvando..." : "Adicionar transação"}
-        </button>
+        <div style={{ gridColumn: "1 / -1" }}>
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: "100%",
+              padding: "14px 18px",
+              borderRadius: 14,
+              border: "none",
+              background: loading
+                ? "#94a3b8"
+                : "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)",
+              color: "#ffffff",
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: loading ? "not-allowed" : "pointer",
+              boxShadow: loading
+                ? "none"
+                : "0 10px 24px rgba(15, 23, 42, 0.18)",
+            }}
+          >
+            {loading ? "Salvando..." : "Adicionar transação"}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -4,12 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "node --no-warnings --loader ts-node/esm index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "seed": "ts-node scripts/seed.ts"
+    "seed": "node --no-warnings --loader ts-node/esm scripts/seed.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
-    "@types/axios": "^0.9.36",
     "axios": "^1.13.6",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",

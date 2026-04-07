@@ -51,6 +51,20 @@ function formatMonthLabel(value: string) {
   }).format(date);
 }
 
+function changeMonth(value: string, offset: number) {
+  const [year, month] = value.split("-");
+  const date = new Date(Number(year), Number(month) - 1 + offset, 1);
+
+  const nextYear = date.getFullYear();
+  const nextMonth = String(date.getMonth() + 1).padStart(2, "0");
+
+  return `${nextYear}-${nextMonth}`;
+}
+
+function isFutureMonth(value: string) {
+  return value > getCurrentMonth();
+}
+
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -58,13 +72,19 @@ function App() {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [evolutionData, setEvolutionData] = useState<EvolutionItem[]>([]);
 
+  // 👉 variáveis que você pediu
+  const previousMonth = changeMonth(selectedMonth, -1);
+  const nextMonth = changeMonth(selectedMonth, 1);
+  const disableNextMonth = isFutureMonth(nextMonth);
+
   async function loadDashboardData(month = selectedMonth) {
-    const [transactionsRes, summaryRes, categoryRes, evolutionRes] = await Promise.all([
-      api.get("/transactions", { params: { month } }),
-      api.get("/summary/month", { params: { month } }),
-      api.get("/summary/by-category", { params: { month } }),
-      api.get("/summary/evolution", { params: { month } }),
-    ]);
+    const [transactionsRes, summaryRes, categoryRes, evolutionRes] =
+      await Promise.all([
+        api.get("/transactions", { params: { month } }),
+        api.get("/summary/month", { params: { month } }),
+        api.get("/summary/by-category", { params: { month } }),
+        api.get("/summary/evolution", { params: { month } }),
+      ]);
 
     setTransactions(transactionsRes.data);
     setSummary(summaryRes.data);
@@ -82,137 +102,147 @@ function App() {
         minHeight: "100vh",
         background: "#f8fafc",
         padding: "32px 24px 48px",
-        display: "flex",
-        justifyContent: "center",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: 1200,
+          margin: "0 auto",
         }}
       >
-        <header
-          style={{
-            marginBottom: 24,
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#64748b",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-            }}
-          >
-            Dashboard financeiro
-          </p>
-
+        {/* HEADER */}
+        <header style={{ marginBottom: 24 }}>
           <h1
             style={{
-              margin: "10px 0 10px",
-              fontSize: 36,
-              lineHeight: 1.1,
+              margin: 0,
+              fontSize: 34,
+              fontWeight: 700,
               color: "#0f172a",
             }}
           >
-            Visão geral das finanças
+            Dashboard Financeiro
           </h1>
-
-          <p
-            style={{
-              margin: 0,
-              fontSize: 15,
-              color: "#64748b",
-              maxWidth: 760,
-              lineHeight: 1.6,
-            }}
-          >
-            Acompanhe receitas, despesas, saldo, distribuição por categoria e evolução
-            financeira mensal em uma visualização única.
-          </p>
         </header>
 
+        {/* FILTRO PREMIUM */}
         <section
           style={{
             background: "#ffffff",
             border: "1px solid #e2e8f0",
-            borderRadius: 18,
-            padding: 18,
+            borderRadius: 20,
+            padding: 20,
             marginBottom: 24,
-            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.04)",
+            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
           }}
         >
-          <label
-            htmlFor="month-filter"
-            style={{
-              display: "block",
-              marginBottom: 10,
-              fontSize: 13,
-              fontWeight: 600,
-              color: "#334155",
-            }}
-          >
-            Filtrar por mês
-          </label>
-
           <div
             style={{
               display: "flex",
               flexWrap: "wrap",
+              justifyContent: "space-between",
               alignItems: "center",
-              gap: 12,
+              gap: 16,
             }}
           >
-            <input
-              id="month-filter"
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              style={{
-                padding: "12px 14px",
-                borderRadius: 12,
-                border: "1px solid #cbd5e1",
-                fontSize: 14,
-                color: "#0f172a",
-                background: "#fff",
-                minWidth: 220,
-              }}
-            />
+            <div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  color: "#64748b",
+                  textTransform: "uppercase",
+                }}
+              >
+                Período
+              </p>
 
-            <span
-              style={{
-                fontSize: 14,
-                color: "#64748b",
-              }}
-            >
-              Período selecionado:{" "}
-              <strong style={{ color: "#0f172a" }}>{formatMonthLabel(selectedMonth)}</strong>
-            </span>
+              <h3
+                style={{
+                  margin: "8px 0 4px",
+                  fontSize: 22,
+                  fontWeight: 700,
+                  color: "#0f172a",
+                }}
+              >
+                {formatMonthLabel(selectedMonth)}
+              </h3>
+            </div>
+
+            <div style={{ display: "flex", gap: 12 }}>
+              {/* ← */}
+              <button
+                onClick={() => setSelectedMonth(previousMonth)}
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 14,
+                  border: "1px solid #cbd5e1",
+                  background: "#ffffff",
+                  cursor: "pointer",
+                }}
+              >
+                ←
+              </button>
+
+              {/* → */}
+              <button
+                onClick={() => {
+                  if (!disableNextMonth) {
+                    setSelectedMonth(nextMonth);
+                  }
+                }}
+                disabled={disableNextMonth}
+                style={{
+                  width: 46,
+                  height: 46,
+                  borderRadius: 14,
+                  border: "1px solid #cbd5e1",
+                  background: disableNextMonth ? "#f1f5f9" : "#ffffff",
+                  color: disableNextMonth ? "#94a3b8" : "#0f172a",
+                  cursor: disableNextMonth ? "not-allowed" : "pointer",
+                }}
+              >
+                →
+              </button>
+
+              {/* botão mês atual */}
+              <button
+                onClick={() => setSelectedMonth(getCurrentMonth())}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid #cbd5e1",
+                  background: "#f8fafc",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Mês atual
+              </button>
+            </div>
           </div>
         </section>
 
-        <section style={{ marginBottom: 24 }}>
-          <TransactionForm onTransactionCreated={loadDashboardData} />
-        </section>
+        {/* FORM */}
+        <TransactionForm onTransactionCreated={loadDashboardData} />
 
-        <section style={{ marginBottom: 24 }}>
-          {summary && <SummaryCards summary={summary} />}
-        </section>
+        {/* SUMMARY */}
+        {summary && <SummaryCards summary={summary} />}
 
-        <section style={{ marginBottom: 24 }}>
-          {evolutionData.length > 0 && <EvolutionChart data={evolutionData} />}
-        </section>
+        {/* EVOLUTION */}
+        {evolutionData.length > 0 && (
+          <EvolutionChart data={evolutionData} />
+        )}
 
-        <section style={{ marginBottom: 24 }}>
-          {categoryData.length > 0 && <CategoryChart data={categoryData} />}
-        </section>
+        {/* CATEGORY */}
+        {categoryData.length > 0 && (
+          <CategoryChart data={categoryData} />
+        )}
 
-        <section>
-          <TransactionsTable transactions={transactions} />
-        </section>
+        {/* TABLE */}
+        <TransactionsTable transactions={transactions} />
       </div>
     </div>
   );
