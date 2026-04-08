@@ -6,6 +6,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
 
 type CategoryItem = {
@@ -29,93 +30,111 @@ function formatCategoryLabel(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function CategoryChart({ data }: CategoryChartProps) {
+function truncateLabel(value: string, max = 14) {
+  const formatted = formatCategoryLabel(value);
+  return formatted.length > max ? `${formatted.slice(0, max)}…` : formatted;
+}
+
+function CategoryTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean;
+  payload?: Array<{
+    value: number;
+    color: string;
+  }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+
   return (
-    <div
-      style={{
-        background: "#ffffff",
-        padding: 24,
-        borderRadius: 20,
-        border: "1px solid #e2e8f0",
-        boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
-        marginBottom: 30,
-      }}
-    >
-      <div style={{ marginBottom: 18 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 24,
-            fontWeight: 700,
-            color: "#0f172a",
-          }}
-        >
-          Gastos por categoria
-        </h2>
-        <p
-          style={{
-            margin: "6px 0 0",
-            fontSize: 14,
-            color: "#64748b",
-            lineHeight: 1.5,
-          }}
-        >
-          Distribuição das despesas registradas no período selecionado.
+    <div className="category-tooltip">
+      <div className="category-tooltip__label">
+        {label ? formatCategoryLabel(label) : ""}
+      </div>
+      <strong className="category-tooltip__value">
+        {formatBRL(Number(payload[0].value))}
+      </strong>
+    </div>
+  );
+}
+
+function CategoryChart({ data }: CategoryChartProps) {
+  const sortedData = [...data].sort((a, b) => b.total - a.total);
+
+  const barColors = [
+    "#818cf8",
+    "#6366f1",
+    "#4f46e5",
+    "#7c3aed",
+    "#8b5cf6",
+    "#22c55e",
+    "#06b6d4",
+  ];
+
+  return (
+    <section className="chart-card chart-card--category">
+      <div className="chart-card__header">
+        <div>
+          <span className="section-eyebrow">Distribuição</span>
+          <h2 className="chart-card__title">Gastos por categoria</h2>
+        </div>
+
+        <p className="chart-card__description">
+          Veja quais categorias concentraram mais despesas no período
+          selecionado.
         </p>
       </div>
 
-      <div style={{ width: "100%", height: 360 }}>
+      <div className="chart-card__canvas chart-card__canvas--category">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data}
-            margin={{ top: 10, right: 16, left: 8, bottom: 36 }}
+            data={sortedData}
+            layout="vertical"
+            margin={{ top: 8, right: 12, left: 8, bottom: 8 }}
+            barCategoryGap={12}
           >
             <CartesianGrid
-              strokeDasharray="3 3"
+              strokeDasharray="4 4"
+              horizontal={true}
               vertical={false}
-              stroke="#e5e7eb"
+              stroke="rgba(148, 163, 184, 0.12)"
             />
 
             <XAxis
-              dataKey="category"
-              tickFormatter={formatCategoryLabel}
-              angle={-18}
-              textAnchor="end"
-              interval={0}
-              height={70}
-              tickLine={false}
-              axisLine={false}
-              tick={{ fill: "#64748b", fontSize: 12 }}
-            />
-
-            <YAxis
+              type="number"
               tickFormatter={(value) => formatBRL(Number(value))}
               tickLine={false}
               axisLine={false}
-              width={96}
-              tick={{ fill: "#64748b", fontSize: 12 }}
+              tick={{ fill: "#94a3b8", fontSize: 12 }}
             />
 
-            <Tooltip
-              contentStyle={{
-                borderRadius: 14,
-                border: "1px solid #e5e7eb",
-                boxShadow: "0 10px 30px rgba(15, 23, 42, 0.10)",
-                backgroundColor: "#ffffff",
-              }}
-              formatter={(value) => formatBRL(Number(value))}
-              labelFormatter={(label) => `Categoria: ${formatCategoryLabel(String(label))}`}
+            <YAxis
+              type="category"
+              dataKey="category"
+              tickFormatter={truncateLabel}
+              tickLine={false}
+              axisLine={false}
+              width={110}
+              tick={{ fill: "#cbd5f5", fontSize: 12 }}
             />
 
-            <Bar
-              dataKey="total"
-              fill="#0f172a"
-              radius={[10, 10, 0, 0]}
-            />
+            <Tooltip content={<CategoryTooltip />} cursor={{ fill: "rgba(99, 102, 241, 0.08)" }} />
+
+            <Bar dataKey="total" radius={[0, 12, 12, 0]}>
+              {sortedData.map((item, index) => (
+                <Cell
+                  key={`${item.category}-${index}`}
+                  fill={barColors[index % barColors.length]}
+                />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
-    </div>
+    </section>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "./api/api";
 import SummaryCards from "./components/SummaryCards";
 import CategoryChart from "./components/CategoryChart";
@@ -45,10 +45,12 @@ function formatMonthLabel(value: string) {
   const [year, month] = value.split("-");
   const date = new Date(Number(year), Number(month) - 1, 1);
 
-  return new Intl.DateTimeFormat("pt-BR", {
+  const formatted = new Intl.DateTimeFormat("pt-BR", {
     month: "long",
     year: "numeric",
   }).format(date);
+
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
 function changeMonth(value: string, offset: number) {
@@ -71,25 +73,39 @@ function App() {
   const [categoryData, setCategoryData] = useState<CategoryItem[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [evolutionData, setEvolutionData] = useState<EvolutionItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // 👉 variáveis que você pediu
-  const previousMonth = changeMonth(selectedMonth, -1);
-  const nextMonth = changeMonth(selectedMonth, 1);
+  const previousMonth = useMemo(
+    () => changeMonth(selectedMonth, -1),
+    [selectedMonth]
+  );
+  const nextMonth = useMemo(
+    () => changeMonth(selectedMonth, 1),
+    [selectedMonth]
+  );
   const disableNextMonth = isFutureMonth(nextMonth);
 
   async function loadDashboardData(month = selectedMonth) {
-    const [transactionsRes, summaryRes, categoryRes, evolutionRes] =
-      await Promise.all([
-        api.get("/transactions", { params: { month } }),
-        api.get("/summary/month", { params: { month } }),
-        api.get("/summary/by-category", { params: { month } }),
-        api.get("/summary/evolution", { params: { month } }),
-      ]);
+    try {
+      setIsLoading(true);
 
-    setTransactions(transactionsRes.data);
-    setSummary(summaryRes.data);
-    setCategoryData(categoryRes.data.result);
-    setEvolutionData(evolutionRes.data);
+      const [transactionsRes, summaryRes, categoryRes, evolutionRes] =
+        await Promise.all([
+          api.get("/transactions", { params: { month } }),
+          api.get("/summary/month", { params: { month } }),
+          api.get("/summary/by-category", { params: { month } }),
+          api.get("/summary/evolution", { params: { month } }),
+        ]);
+
+      setTransactions(transactionsRes.data);
+      setSummary(summaryRes.data);
+      setCategoryData(categoryRes.data.result);
+      setEvolutionData(evolutionRes.data);
+    } catch (error) {
+      console.error("Erro ao carregar dashboard:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -97,152 +113,102 @@ function App() {
   }, [selectedMonth]);
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f8fafc",
-        padding: "32px 24px 48px",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 1200,
-          margin: "0 auto",
-        }}
-      >
-        {/* HEADER */}
-        <header style={{ marginBottom: 24 }}>
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 34,
-              fontWeight: 700,
-              color: "#0f172a",
-            }}
-          >
-            Dashboard Financeiro
-          </h1>
+    <div className="app-shell">
+      <div className="app-container">
+        <header className="hero-section">
+          <div className="hero-copy">
+            <span className="hero-badge">Painel financeiro</span>
+
+            <h1 className="hero-title">Controle financeiro com clareza, ritmo e visão</h1>
+
+            <p className="hero-description">
+              Visualize receitas, despesas, saldo e comportamento mensal em uma interface
+              moderna, intuitiva e pensada para leitura rápida.
+            </p>
+          </div>
+
+          <div className="hero-highlight-card">
+            <p className="hero-highlight-label">Período em foco</p>
+            <strong className="hero-highlight-value">
+              {formatMonthLabel(selectedMonth)}
+            </strong>
+            <span className="hero-highlight-caption">
+              Navegue pelos meses para acompanhar a evolução financeira e identificar padrões.
+            </span>
+          </div>
         </header>
 
-        {/* FILTRO PREMIUM */}
-        <section
-          style={{
-            background: "#ffffff",
-            border: "1px solid #e2e8f0",
-            borderRadius: 20,
-            padding: 20,
-            marginBottom: 24,
-            boxShadow: "0 8px 24px rgba(15, 23, 42, 0.05)",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: 16,
-            }}
-          >
-            <div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  color: "#64748b",
-                  textTransform: "uppercase",
-                }}
-              >
-                Período
-              </p>
+        <section className="toolbar-card">
+          <div className="toolbar-copy">
+            <span className="toolbar-eyebrow">Filtro de período</span>
+            <h2 className="toolbar-title">{formatMonthLabel(selectedMonth)}</h2>
+            <p className="toolbar-description">
+              Use os controles para avançar ou voltar entre os meses.
+            </p>
+          </div>
 
-              <h3
-                style={{
-                  margin: "8px 0 4px",
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: "#0f172a",
-                }}
-              >
-                {formatMonthLabel(selectedMonth)}
-              </h3>
-            </div>
+          <div className="toolbar-actions">
+            <button
+              type="button"
+              className="month-nav-button"
+              onClick={() => setSelectedMonth(previousMonth)}
+              aria-label="Voltar um mês"
+            >
+              ←
+            </button>
 
-            <div style={{ display: "flex", gap: 12 }}>
-              {/* ← */}
-              <button
-                onClick={() => setSelectedMonth(previousMonth)}
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 14,
-                  border: "1px solid #cbd5e1",
-                  background: "#ffffff",
-                  cursor: "pointer",
-                }}
-              >
-                ←
-              </button>
+            <button
+              type="button"
+              className="month-nav-button"
+              onClick={() => {
+                if (!disableNextMonth) {
+                  setSelectedMonth(nextMonth);
+                }
+              }}
+              disabled={disableNextMonth}
+              aria-label="Avançar um mês"
+            >
+              →
+            </button>
 
-              {/* → */}
-              <button
-                onClick={() => {
-                  if (!disableNextMonth) {
-                    setSelectedMonth(nextMonth);
-                  }
-                }}
-                disabled={disableNextMonth}
-                style={{
-                  width: 46,
-                  height: 46,
-                  borderRadius: 14,
-                  border: "1px solid #cbd5e1",
-                  background: disableNextMonth ? "#f1f5f9" : "#ffffff",
-                  color: disableNextMonth ? "#94a3b8" : "#0f172a",
-                  cursor: disableNextMonth ? "not-allowed" : "pointer",
-                }}
-              >
-                →
-              </button>
-
-              {/* botão mês atual */}
-              <button
-                onClick={() => setSelectedMonth(getCurrentMonth())}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid #cbd5e1",
-                  background: "#f8fafc",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Mês atual
-              </button>
-            </div>
+            <button
+              type="button"
+              className="current-month-button"
+              onClick={() => setSelectedMonth(getCurrentMonth())}
+            >
+              Ir para mês atual
+            </button>
           </div>
         </section>
 
-        {/* FORM */}
-        <TransactionForm onTransactionCreated={loadDashboardData} />
+        <section className="content-stack">
+          <TransactionForm onTransactionCreated={loadDashboardData} />
 
-        {/* SUMMARY */}
-        {summary && <SummaryCards summary={summary} />}
+          {summary && <SummaryCards summary={summary} />}
 
-        {/* EVOLUTION */}
-        {evolutionData.length > 0 && (
-          <EvolutionChart data={evolutionData} />
-        )}
+          {evolutionData.length > 0 && <EvolutionChart data={evolutionData} />}
 
-        {/* CATEGORY */}
-        {categoryData.length > 0 && (
-          <CategoryChart data={categoryData} />
-        )}
+          <div className="charts-grid">
+            {categoryData.length > 0 && (
+              <div className="grid-card-span">
+                <CategoryChart data={categoryData} />
+              </div>
+            )}
+          </div>
 
-        {/* TABLE */}
-        <TransactionsTable transactions={transactions} />
+          <section className="table-section">
+            <div className="section-heading">
+              <div>
+                <span className="section-eyebrow">Histórico</span>
+                <h2 className="section-title">Transações recentes</h2>
+              </div>
+
+              {isLoading && <span className="section-status">Atualizando…</span>}
+            </div>
+
+            <TransactionsTable transactions={transactions} />
+          </section>
+        </section>
       </div>
     </div>
   );
