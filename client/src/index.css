@@ -45,11 +45,12 @@ body {
 .app-shell {
   padding: 36px 20px 56px;
 }
+
 .app-container {
   width: 100%;
-  max-width: 1280px;
+  max-width: 1600px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 clamp(16px, 4vw, 40px);
 }
 
 /* HERO */
@@ -63,6 +64,7 @@ body {
   padding: 34px;
   border-radius: 30px;
   overflow: hidden;
+  min-height: 260px;
 
   background:
     radial-gradient(circle at 12% 18%, rgba(99, 102, 241, 0.24), transparent 28%),
@@ -111,6 +113,7 @@ body {
   min-height: 220px;
   max-width: 700px;
 }
+
 .hero-badge {
   display: inline-flex;
   align-items: center;
@@ -166,6 +169,7 @@ body {
 
   backdrop-filter: blur(14px);
 }
+
 .hero-highlight-label {
   margin: 0 0 10px;
   font-size: 12px;
@@ -207,6 +211,7 @@ body {
     0 14px 34px rgba(2, 6, 23, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
+
 .toolbar-eyebrow {
   font-size: 11px;
   text-transform: uppercase;
@@ -219,11 +224,13 @@ body {
   font-weight: 750;
   color: var(--text-strong);
 }
+
 .toolbar-description {
   margin: 0;
   font-size: 13px;
   color: var(--text-soft);
 }
+
 .toolbar-actions {
   display: flex;
   gap: 10px;
